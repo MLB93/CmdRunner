@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 import org.json.JSONArray;
@@ -31,11 +30,6 @@ public class Configuration {
 
 	private List<CmdProcess> processes;
 
-	public static void main(String[] args)
-			throws NoConfigFileException, ReadConfigFileException, ConfigParameterException {
-		Configuration conf = new Configuration();
-	}
-
 	public Configuration() throws NoConfigFileException, ReadConfigFileException, ConfigParameterException {
 		fillConfig();
 		System.out.println(toString());
@@ -43,42 +37,49 @@ public class Configuration {
 
 	public void fillConfig() throws NoConfigFileException, ReadConfigFileException, ConfigParameterException {
 		File configFile = new File(getConfigFilePath());
-		if (configFile.exists()) {
-			processes = new ArrayList<>();
-			try {
-				String file = readFile(configFile);
-				JSONArray root = new JSONArray(file);
-				for (Object obj : root) {
-					JSONObject jobj = (JSONObject) obj;
-					String path = jobj.getString(ConfPara.path.name());
-					String title = jobj.optString(ConfPara.title.name(), path);
-					int delaySeconds = jobj.optInt(ConfPara.delaySeconds.name(), 0);
-					boolean notify = jobj.optBoolean(ConfPara.notify.name(), true);
-					boolean autostart = jobj.optBoolean(ConfPara.autostart.name(), true);
-					CmdProcess proc = new CmdProcess(path, title, delaySeconds, notify, autostart);
-					processes.add(proc);
-				}
-			} catch (JSONException e) {
-				throw new ConfigParameterException("Parameter missing or wrong JSON syntax", e);
-			}
-		} else {
+		if (!configFile.exists()) {
 			createAndEditConfig();
-			throw new NoConfigFileException(
-					"No ConfigFile found. Default file is created at " + System.lineSeparator() + getConfigFilePath());
+		}
+		processes = new ArrayList<>();
+		try {
+			String file = readFile(configFile);
+			JSONArray root = new JSONArray(file);
+			for (Object obj : root) {
+				JSONObject jobj = (JSONObject) obj;
+				String path = jobj.getString(ConfPara.path.name());
+				String title = jobj.optString(ConfPara.title.name(), path);
+				int delaySeconds = jobj.optInt(ConfPara.delaySeconds.name(), 0);
+				boolean notify = jobj.optBoolean(ConfPara.notify.name(), true);
+				boolean autostart = jobj.optBoolean(ConfPara.autostart.name(), true);
+				CmdProcess proc = new CmdProcess(path, title, delaySeconds, notify, autostart);
+				processes.add(proc);
+			}
+		} catch (JSONException e) {
+			JOptionPane.showMessageDialog(null, "Parameter missing or wrong JSON syntax.",
+					"Reading Config", JOptionPane.ERROR_MESSAGE);
+			createAndEditConfig();
 		}
 	}
 
-	private void createAndEditConfig() {
+	public void createAndEditConfig() throws NoConfigFileException, ReadConfigFileException, ConfigParameterException {
 		try {
 			File conf = new File(getConfigFilePath());
-			if(!conf.exists()) {
+			if (!conf.exists()) {
 				generateDefaultConfigFile();
 			}
-			Desktop.getDesktop().open(conf);
-			JOptionPane.showMessageDialog(new JFrame(), "Please confirm when you have edited the configuration.",
-					"Edit Config", JOptionPane.INFORMATION_MESSAGE);
-			System.out.println("Config edited");
-		} catch (IOException e) {
+
+			if (isWindows()) {
+				ProcessBuilder processBuilder = new ProcessBuilder();
+				processBuilder.command("notepad.exe", getConfigFilePath());
+				Process process = processBuilder.start();
+				process.waitFor();
+			} else {
+				Desktop.getDesktop().open(conf);
+				JOptionPane.showMessageDialog(null, "Please confirm when you have edited the configuration.",
+						"Edit Config", JOptionPane.INFORMATION_MESSAGE);
+			}
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -110,7 +111,7 @@ public class Configuration {
 		programs.put(program);
 
 		StringBuilder bld = new StringBuilder();
-		//TODO add comment to json
+		// TODO add comment to json
 		bld.append(programs.toString(2));
 
 		if (!new File(getProgramDir()).exists()) {
@@ -138,10 +139,14 @@ public class Configuration {
 	}
 
 	public String getProgramDir() {
-		if (System.getProperty("os.name").toLowerCase().contains("win"))
+		if (isWindows())
 			return System.getenv("APPDATA") + File.separator + PROGRAM_NAME;
 		else
 			return System.getProperty("user.home") + File.separator + PROGRAM_NAME;
+	}
+
+	private boolean isWindows() {
+		return System.getProperty("os.name").toLowerCase().contains("win");
 	}
 
 }
