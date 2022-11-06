@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.swing.JOptionPane;
 
@@ -29,6 +30,7 @@ public class Configuration {
 	}
 
 	private List<CmdProcess> processes;
+
 
 	public Configuration() throws NoConfigFileException, ReadConfigFileException, ConfigParameterException {
 		fillConfig();
@@ -51,7 +53,7 @@ public class Configuration {
 				int delaySeconds = jobj.optInt(ConfPara.delaySeconds.name(), 0);
 				boolean notify = jobj.optBoolean(ConfPara.notify.name(), true);
 				boolean autostart = jobj.optBoolean(ConfPara.autostart.name(), true);
-				CmdProcess proc = new CmdProcess(path, title, delaySeconds, notify, autostart);
+				CmdProcessImpl proc = new CmdProcessImpl(path, title, delaySeconds, notify, autostart);
 				processes.add(proc);
 			}
 		} catch (JSONException e) {
@@ -145,6 +147,10 @@ public class Configuration {
 			return System.getProperty("user.home") + File.separator + PROGRAM_NAME;
 	}
 
+	public Stream<CmdProcess> getProcesses() {
+		return processes.stream();
+	}
+	
 	private boolean isWindows() {
 		return System.getProperty("os.name").toLowerCase().contains("win");
 	}
