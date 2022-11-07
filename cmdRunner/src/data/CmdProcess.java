@@ -1,8 +1,13 @@
 package data;
 
+import java.beans.PropertyChangeListener;
+
+import general.exception.process.AlreadyRunningException;
 import gui.UserCommunicator;
 
 public interface CmdProcess {
+	public static final String RUNNING_PROPERTY = "RUNNING";
+
 	public String getPath();
 
 	public String getTitle();
@@ -19,5 +24,9 @@ public interface CmdProcess {
 
 	public void destroy();
 
-	public void start(UserCommunicator comm) throws Exception;
+	public void start(UserCommunicator comm) throws AlreadyRunningException;
+
+	public void autoStart(UserCommunicator comm) throws AlreadyRunningException;
+
+	public void addRunningPropertyChangeListener(PropertyChangeListener listener);
 }

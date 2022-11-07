@@ -18,7 +18,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import general.exception.config.ConfigParameterException;
-import general.exception.config.NoConfigFileException;
 import general.exception.config.ReadConfigFileException;
 
 public class Configuration {
@@ -31,13 +30,11 @@ public class Configuration {
 
 	private List<CmdProcess> processes;
 
-
-	public Configuration() throws NoConfigFileException, ReadConfigFileException, ConfigParameterException {
+	public Configuration() throws ReadConfigFileException, ConfigParameterException {
 		fillConfig();
-		System.out.println(toString());
 	}
 
-	public void fillConfig() throws NoConfigFileException, ReadConfigFileException, ConfigParameterException {
+	public void fillConfig() throws ReadConfigFileException, ConfigParameterException {
 		File configFile = new File(getConfigFilePath());
 		if (!configFile.exists()) {
 			createAndEditConfig();
@@ -57,13 +54,13 @@ public class Configuration {
 				processes.add(proc);
 			}
 		} catch (JSONException e) {
-			JOptionPane.showMessageDialog(null, "Parameter missing or wrong JSON syntax.",
-					"Reading Config", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Parameter missing or wrong JSON syntax.", "Reading Config",
+					JOptionPane.ERROR_MESSAGE);
 			createAndEditConfig();
 		}
 	}
 
-	public void createAndEditConfig() throws NoConfigFileException, ReadConfigFileException, ConfigParameterException {
+	public void createAndEditConfig() throws ReadConfigFileException, ConfigParameterException {
 		try {
 			File conf = new File(getConfigFilePath());
 			if (!conf.exists()) {
@@ -150,7 +147,7 @@ public class Configuration {
 	public Stream<CmdProcess> getProcesses() {
 		return processes.stream();
 	}
-	
+
 	private boolean isWindows() {
 		return System.getProperty("os.name").toLowerCase().contains("win");
 	}

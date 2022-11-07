@@ -1,5 +1,7 @@
 package data;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,9 +10,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import general.exception.process.AlreadyRunningException;
 import gui.UserCommunicator;
 
-public class CmdProcessImpl implements CmdProcess{
+public class CmdProcessImpl implements CmdProcess {
 	private String path;
 	private String title;
 	private int delaySeconds;
@@ -19,6 +22,8 @@ public class CmdProcessImpl implements CmdProcess{
 
 	private Process process = null;
 	private List<String> output = Collections.synchronizedList(new ArrayList<>());
+
+	private List<PropertyChangeListener> runningChangeListener = new ArrayList<PropertyChangeListener>();
 
 	public CmdProcessImpl(String path, String title, int delaySeconds, boolean notify, boolean autostart) {
 		super();
@@ -29,30 +34,37 @@ public class CmdProcessImpl implements CmdProcess{
 		this.autostart = autostart;
 	}
 
+	@Override
 	public String getPath() {
 		return path;
 	}
 
+	@Override
 	public String getTitle() {
 		return title;
 	}
 
+	@Override
 	public int getDelaySeconds() {
 		return delaySeconds;
 	}
 
+	@Override
 	public boolean isNotify() {
 		return notify;
 	}
 
+	@Override
 	public boolean isAutostart() {
 		return autostart;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return process != null ? process.isAlive() : false;
 	}
 
+	@Override
 	public String getOutput() {
 		StringBuilder bld = new StringBuilder();
 		synchronized (output) {
@@ -63,20 +75,23 @@ public class CmdProcessImpl implements CmdProcess{
 		return bld.toString();
 	}
 
+	@Override
 	public void destroy() {
 		if (process != null)
 			process.destroy();
 	}
 
-	public void start(UserCommunicator comm) throws Exception {
+	@Override
+	public void start(UserCommunicator comm) throws AlreadyRunningException {
 		if (process != null && process.isAlive()) {
-			throw new Exception("Process is Running");// TODO
+			throw new AlreadyRunningException(title);
 		}
-		TimeUnit.SECONDS.sleep(delaySeconds);
+
 		Thread thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
+					callRunningPropertyChangeListener(true);
 					ProcessBuilder processBuilder = new ProcessBuilder();
 					processBuilder.command(path);
 					process = processBuilder.start();
@@ -92,11 +107,42 @@ public class CmdProcessImpl implements CmdProcess{
 				} catch (IOException | InterruptedException e) {
 					comm.showErrorMessage("Error: " + title, e.getClass().getSimpleName() + ": " + e.getMessage());
 				}
+				callRunningPropertyChangeListener(false);
 			}
 		});
 		thread.start();
 		if (notify)
-			comm.showInfoMessage(title + " started", "the cmd process " + title + " is stared");
+			comm.showInfoMessage(title + " started", "the cmd process " + title + " is started");
+	}
+
+	@Override
+	public void autoStart(UserCommunicator comm) {
+		if (!autostart)
+			return;
+		Thread waitThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					TimeUnit.SECONDS.sleep(delaySeconds);
+					start(comm);
+				} catch (InterruptedException e) {
+				} catch (AlreadyRunningException e) {
+					System.out.println(e.getMessage());
+				}
+			}
+		});
+		waitThread.start();
+	}
+
+	@Override
+	public void addRunningPropertyChangeListener(PropertyChangeListener listener) {
+		runningChangeListener.add(listener);
+	}
+
+	private void callRunningPropertyChangeListener(boolean running) {
+		for (PropertyChangeListener listener : runningChangeListener) {
+			listener.propertyChange(new PropertyChangeEvent(title, RUNNING_PROPERTY, !running, running));
+		}
 	}
 
 	private void addConsoleOutput(String line) {
