@@ -91,19 +91,24 @@ public class CmdProcessImpl implements CmdProcess {
 			@Override
 			public void run() {
 				try {
+					if (notify)
+						comm.showInfoMessage(title + " started", "The cmd process " + title + " started");
 					callRunningPropertyChangeListener(true);
 					ProcessBuilder processBuilder = new ProcessBuilder();
 					processBuilder.command(path);
 					process = processBuilder.start();
-					try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-						String line;
-						while ((line = reader.readLine()) != null) {
-							addConsoleOutput(line);
+					if (process.getInputStream() != null) {
+						try (BufferedReader reader = new BufferedReader(
+								new InputStreamReader(process.getInputStream()))) {
+							String line;
+							while ((line = reader.readLine()) != null) {
+								addConsoleOutput(line);
+							}
 						}
 					}
 					process.waitFor();
 					if (notify)
-						comm.showInfoMessage(title + " terminated", "the cmd process " + title + "is terminated");
+						comm.showInfoMessage(title + " terminated", "The cmd process " + title + " is terminated");
 				} catch (IOException | InterruptedException e) {
 					comm.showErrorMessage("Error: " + title, e.getClass().getSimpleName() + ": " + e.getMessage());
 				}
@@ -111,8 +116,6 @@ public class CmdProcessImpl implements CmdProcess {
 			}
 		});
 		thread.start();
-		if (notify)
-			comm.showInfoMessage(title + " started", "the cmd process " + title + " is started");
 	}
 
 	@Override
@@ -132,6 +135,22 @@ public class CmdProcessImpl implements CmdProcess {
 			}
 		});
 		waitThread.start();
+	}
+
+	@Override
+	public void restart(UserCommunicator comm) {
+		// TODO Known issue: Gui updates not correctly
+		destroy();
+		try {
+			while (isAlive()) {
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				} catch (InterruptedException e) {
+				}
+			}
+			start(comm);
+		} catch (AlreadyRunningException e) {
+		}
 	}
 
 	@Override

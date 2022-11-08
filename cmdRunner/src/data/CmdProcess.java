@@ -28,5 +28,7 @@ public interface CmdProcess {
 
 	public void autoStart(UserCommunicator comm) throws AlreadyRunningException;
 
+	public void restart(UserCommunicator comm);
+
 	public void addRunningPropertyChangeListener(PropertyChangeListener listener);
 }

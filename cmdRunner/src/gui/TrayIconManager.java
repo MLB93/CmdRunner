@@ -11,7 +11,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.net.URL;
 import java.util.ArrayList;
 
 import javax.swing.ImageIcon;
@@ -23,17 +22,20 @@ import general.exception.process.AlreadyRunningException;
 
 public class TrayIconManager implements UserCommunicator {
 
+	public static final Image IMAGE = (new ImageIcon(TrayIconManager.class.getResource("img/cmd.png"))).getImage();
+
 	private final TrayIcon trayIcon;
 	private SystemTray tray;
 	private Configuration config;
+	private java.util.List<ActionListener> exitListeners = new ArrayList<>();
+	private java.util.List<ActionListener> editConfigListeners = new ArrayList<>();
 
 	public TrayIconManager(Configuration config) {
 		this.config = config;
-		trayIcon = new TrayIcon(createImage("img/cmd.png", "tray icon"));
+		trayIcon = new TrayIcon(IMAGE);
 		if (SystemTray.isSupported()) {
 			this.tray = SystemTray.getSystemTray();
 		}
-		showGui();
 	}
 
 	public void showGui() {
@@ -47,8 +49,6 @@ public class TrayIconManager implements UserCommunicator {
 		trayIcon.setToolTip("cmdRunner");
 
 		generatePopupMenu();
-		trayIcon.addActionListener(getAboutListener());
-
 		try {
 			tray.add(trayIcon);
 		} catch (AWTException e) {
@@ -58,7 +58,7 @@ public class TrayIconManager implements UserCommunicator {
 
 	}
 
-	private void generatePopupMenu() {
+	public void generatePopupMenu() {
 		final PopupMenu popup = new PopupMenu();
 
 		for (MenuItem item : createProcessMenuItems(config.getProcesses().toList())) {
@@ -66,11 +66,20 @@ public class TrayIconManager implements UserCommunicator {
 		}
 
 		popup.addSeparator();
+		MenuItem editConfigItem = new MenuItem("Edit Config");
+		for (ActionListener listener : editConfigListeners) {
+			editConfigItem.addActionListener(listener);
+		}
+		popup.add(editConfigItem);
+
 		MenuItem aboutItem = new MenuItem("About");
 		aboutItem.addActionListener(getAboutListener());
 		popup.add(aboutItem);
+
 		MenuItem exitItem = new MenuItem("Exit");
-		exitItem.addActionListener(getExitListener(trayIcon, tray));
+		for (ActionListener listener : exitListeners) {
+			exitItem.addActionListener(listener);
+		}
 		popup.add(exitItem);
 
 		trayIcon.setPopupMenu(popup);
@@ -98,28 +107,6 @@ public class TrayIconManager implements UserCommunicator {
 				JOptionPane.showMessageDialog(null, "CmdRunner by MLB");
 			}
 		};
-	}
-
-	private ActionListener getExitListener(final TrayIcon trayIcon, final SystemTray tray) {
-		return new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				tray.remove(trayIcon);
-				System.exit(0);
-			}
-		};
-	}
-
-	// Obtain the image URL
-	private Image createImage(String path, String description) {
-		URL imageURL = TrayIconManager.class.getResource(path);
-
-		if (imageURL == null) {
-			System.err.println("Resource not found: " + path);
-			return null;
-		} else {
-			return (new ImageIcon(imageURL, description)).getImage();
-		}
 	}
 
 	private java.util.List<MenuItem> createProcessMenuItems(java.util.List<CmdProcess> processes) {
@@ -152,11 +139,21 @@ public class TrayIconManager implements UserCommunicator {
 			});
 			menu.add(stopItem);
 
+			MenuItem restartItem = new MenuItem("restart");
+			restartItem.setEnabled(!proc.isAlive());
+			restartItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					proc.restart(TrayIconManager.this);
+				}
+			});
+			menu.add(restartItem);
+
 			MenuItem outputItem = new MenuItem("show output");
 			outputItem.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					System.out.println(proc.getOutput());// TODO
+					OutputFrame.show(proc.getOutput(), proc.getTitle());
 				}
 			});
 			menu.add(outputItem);
@@ -168,6 +165,7 @@ public class TrayIconManager implements UserCommunicator {
 						menu.setLabel(proc.getTitle() + ((boolean) evt.getNewValue() ? " ∞" : ""));
 						startItem.setEnabled(!(boolean) evt.getNewValue());
 						stopItem.setEnabled((boolean) evt.getNewValue());
+						restartItem.setEnabled((boolean) evt.getNewValue());
 					}
 				}
 			};
@@ -175,5 +173,17 @@ public class TrayIconManager implements UserCommunicator {
 			items.add(menu);
 		}
 		return items;
+	}
+
+	public void addExitListener(ActionListener listener) {
+		exitListeners.add(listener);
+	}
+
+	public void addEditConfigListener(ActionListener listener) {
+		editConfigListeners.add(listener);
+	}
+
+	public void remove() {
+		tray.remove(trayIcon);
 	}
 }

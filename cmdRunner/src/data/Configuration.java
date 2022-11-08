@@ -19,22 +19,23 @@ import org.json.JSONObject;
 
 import general.exception.config.ConfigParameterException;
 import general.exception.config.ReadConfigFileException;
+import general.exception.config.ShowConfigException;
 
 public class Configuration {
 	private static final String PROGRAM_NAME = "cmdRunner";
 	private static final String FILE_NAME = "cmdRunnerConf.json";
 
 	private static enum ConfPara {
-		path, title, delaySeconds, notify, autostart;
+		path, title, delaySecondsAutostart, notify, autostart;
 	}
 
 	private List<CmdProcess> processes;
 
-	public Configuration() throws ReadConfigFileException, ConfigParameterException {
+	public Configuration() throws ReadConfigFileException, ConfigParameterException, ShowConfigException {
 		fillConfig();
 	}
 
-	public void fillConfig() throws ReadConfigFileException, ConfigParameterException {
+	public void fillConfig() throws ReadConfigFileException, ConfigParameterException, ShowConfigException {
 		File configFile = new File(getConfigFilePath());
 		if (!configFile.exists()) {
 			createAndEditConfig();
@@ -47,9 +48,9 @@ public class Configuration {
 				JSONObject jobj = (JSONObject) obj;
 				String path = jobj.getString(ConfPara.path.name());
 				String title = jobj.optString(ConfPara.title.name(), path);
-				int delaySeconds = jobj.optInt(ConfPara.delaySeconds.name(), 0);
 				boolean notify = jobj.optBoolean(ConfPara.notify.name(), true);
 				boolean autostart = jobj.optBoolean(ConfPara.autostart.name(), true);
+				int delaySeconds = jobj.optInt(ConfPara.delaySecondsAutostart.name(), 0);
 				CmdProcessImpl proc = new CmdProcessImpl(path, title, delaySeconds, notify, autostart);
 				processes.add(proc);
 			}
@@ -57,10 +58,11 @@ public class Configuration {
 			JOptionPane.showMessageDialog(null, "Parameter missing or wrong JSON syntax.", "Reading Config",
 					JOptionPane.ERROR_MESSAGE);
 			createAndEditConfig();
+			fillConfig();
 		}
 	}
 
-	public void createAndEditConfig() throws ReadConfigFileException, ConfigParameterException {
+	public void createAndEditConfig() throws ShowConfigException {
 		try {
 			File conf = new File(getConfigFilePath());
 			if (!conf.exists()) {
@@ -78,7 +80,7 @@ public class Configuration {
 						"Edit Config", JOptionPane.INFORMATION_MESSAGE);
 			}
 		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
+			throw new ShowConfigException("Can not open config file");
 		}
 	}
 
@@ -104,9 +106,9 @@ public class Configuration {
 		JSONObject program = new JSONObject();
 		program.put(ConfPara.path.name(), "C:\\test.bat");
 		program.put(ConfPara.title.name(), "Test Program");
-		program.put(ConfPara.delaySeconds.name(), 0);
 		program.put(ConfPara.notify.name(), true);
 		program.put(ConfPara.autostart.name(), true);
+		program.put(ConfPara.delaySecondsAutostart.name(), 0);
 		programs.put(program);
 
 		StringBuilder bld = new StringBuilder();
