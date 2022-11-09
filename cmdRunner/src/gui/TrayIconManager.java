@@ -98,6 +98,7 @@ public class TrayIconManager implements UserCommunicator {
 	@Override
 	public void showInfoMessage(String title, String message) {
 		trayIcon.displayMessage(title, message, TrayIcon.MessageType.INFO);
+		System.out.println(title + ": " + message);
 	}
 
 	private ActionListener getAboutListener() {

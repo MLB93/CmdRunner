@@ -90,29 +90,31 @@ public class CmdProcessImpl implements CmdProcess {
 		Thread thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				try {
-					if (notify)
-						comm.showInfoMessage(title + " started", "The cmd process " + title + " started");
-					callRunningPropertyChangeListener(true);
-					ProcessBuilder processBuilder = new ProcessBuilder();
-					processBuilder.command(path);
-					process = processBuilder.start();
-					if (process.getInputStream() != null) {
-						try (BufferedReader reader = new BufferedReader(
-								new InputStreamReader(process.getInputStream()))) {
-							String line;
-							while ((line = reader.readLine()) != null) {
-								addConsoleOutput(line);
+				synchronized (runningChangeListener) {
+					try {
+						if (notify)
+							comm.showInfoMessage(title + " started", "The cmd process " + title + " started");
+						callRunningPropertyChangeListener(true);
+						ProcessBuilder processBuilder = new ProcessBuilder();
+						processBuilder.command(path);
+						process = processBuilder.start();
+						if (process.getInputStream() != null) {
+							try (BufferedReader reader = new BufferedReader(
+									new InputStreamReader(process.getInputStream()))) {
+								String line;
+								while ((line = reader.readLine()) != null) {
+									addConsoleOutput(line);
+								}
 							}
 						}
+						process.waitFor();
+						if (notify)
+							comm.showInfoMessage(title + " terminated", "The cmd process " + title + " is terminated");
+					} catch (IOException | InterruptedException e) {
+						comm.showErrorMessage("Error: " + title, e.getClass().getSimpleName() + ": " + e.getMessage());
 					}
-					process.waitFor();
-					if (notify)
-						comm.showInfoMessage(title + " terminated", "The cmd process " + title + " is terminated");
-				} catch (IOException | InterruptedException e) {
-					comm.showErrorMessage("Error: " + title, e.getClass().getSimpleName() + ": " + e.getMessage());
+					callRunningPropertyChangeListener(false);
 				}
-				callRunningPropertyChangeListener(false);
 			}
 		});
 		thread.start();
@@ -139,7 +141,6 @@ public class CmdProcessImpl implements CmdProcess {
 
 	@Override
 	public void restart(UserCommunicator comm) {
-		// TODO Known issue: Gui updates not correctly
 		destroy();
 		try {
 			while (isAlive()) {
