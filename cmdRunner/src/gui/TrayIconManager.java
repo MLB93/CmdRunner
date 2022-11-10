@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
@@ -61,7 +62,7 @@ public class TrayIconManager implements UserCommunicator {
 	public void generatePopupMenu() {
 		final PopupMenu popup = new PopupMenu();
 
-		for (MenuItem item : createProcessMenuItems(config.getProcesses().toList())) {
+		for (MenuItem item : createProcessMenuItems(config.getProcesses().collect(Collectors.toList()))) {
 			popup.add(item);
 		}
 

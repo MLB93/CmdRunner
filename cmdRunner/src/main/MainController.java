@@ -3,6 +3,7 @@ package main;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.swing.JOptionPane;
 
@@ -39,7 +40,7 @@ public class MainController {
 	}
 
 	private void startProcesses() {
-		for (CmdProcess proc : config.getProcesses().toList()) {
+		for (CmdProcess proc : config.getProcesses().collect(Collectors.toList())) {
 			try {
 				proc.autoStart(tim);
 			} catch (AlreadyRunningException e) {
@@ -49,7 +50,7 @@ public class MainController {
 	}
 
 	private void stopProcesses() {
-		for (CmdProcess proc : config.getProcesses().toList()) {
+		for (CmdProcess proc : config.getProcesses().collect(Collectors.toList())) {
 			proc.destroy();
 			while (proc.isAlive()) {
 				try {
