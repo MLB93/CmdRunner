@@ -10,6 +10,7 @@ import javax.swing.JOptionPane;
 import data.CmdProcess;
 import data.Configuration;
 import general.exception.config.ConfigException;
+import general.exception.gui.NoSystemTrayException;
 import general.exception.process.AlreadyRunningException;
 import gui.TrayIconManager;
 
@@ -21,7 +22,7 @@ public class MainController {
 
 			MainController controller = new MainController(config, tim);
 			controller.startProcesses();
-		} catch (ConfigException e) {
+		} catch (ConfigException | NoSystemTrayException e) {
 			JOptionPane.showMessageDialog(null, e.getMessage(), e.getClass().getSimpleName(),
 					JOptionPane.ERROR_MESSAGE);
 		}
@@ -30,7 +31,7 @@ public class MainController {
 	private Configuration config;
 	private TrayIconManager tim;
 
-	public MainController(Configuration config, TrayIconManager tim) {
+	public MainController(Configuration config, TrayIconManager tim) throws NoSystemTrayException {
 		this.config = config;
 		this.tim = tim;
 

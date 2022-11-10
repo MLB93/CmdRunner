@@ -43,6 +43,7 @@ public class Configuration {
 		processes = new ArrayList<>();
 		try {
 			String file = readFile(configFile);
+			file = removeComment(file);
 			JSONArray root = new JSONArray(file);
 			for (Object obj : root) {
 				JSONObject jobj = (JSONObject) obj;
@@ -84,35 +85,23 @@ public class Configuration {
 		}
 	}
 
-	private String readFile(File configFile) throws ReadConfigFileException {
-		List<String> lines = Collections.emptyList();
-		try {
-			lines = Files.readAllLines(configFile.toPath());
-		} catch (IOException e) {
-			throw new ReadConfigFileException("Config File not readable", e);
-		}
-
-		StringBuilder configString = new StringBuilder();
-		for (String line : lines) {
-			configString.append(line);
-		}
-
-		return configString.toString();
-	}
 
 	private void generateDefaultConfigFile() {
 		// build default JSON
 		JSONArray programs = new JSONArray();
 		JSONObject program = new JSONObject();
-		program.put(ConfPara.path.name(), "C:\\test.bat");
-		program.put(ConfPara.title.name(), "Test Program");
+		program.put(ConfPara.path.name(), "C:\\example.bat");
+		program.put(ConfPara.title.name(), "Example Program");
 		program.put(ConfPara.notify.name(), true);
 		program.put(ConfPara.autostart.name(), true);
 		program.put(ConfPara.delaySecondsAutostart.name(), 0);
 		programs.put(program);
 
-		StringBuilder bld = new StringBuilder();
-		// TODO add comment to json
+		String ls = System.lineSeparator();
+        StringBuilder bld = new StringBuilder("/*");
+        bld.append(ls + "Configure your programs in a JSON array.");
+        bld.append(ls + "All fields except \"path\" are optional.");
+        bld.append(ls + "*/" + ls);
 		bld.append(programs.toString(2));
 
 		if (!new File(getProgramDir()).exists()) {
@@ -139,6 +128,22 @@ public class Configuration {
 		return getProgramDir() + File.separator + FILE_NAME;
 	}
 
+	private String readFile(File configFile) throws ReadConfigFileException {
+		List<String> lines = Collections.emptyList();
+		try {
+			lines = Files.readAllLines(configFile.toPath());
+		} catch (IOException e) {
+			throw new ReadConfigFileException("Config File not readable", e);
+		}
+
+		StringBuilder configString = new StringBuilder();
+		for (String line : lines) {
+			configString.append(line);
+		}
+
+		return configString.toString();
+	}
+
 	public String getProgramDir() {
 		if (isWindows())
 			return System.getenv("APPDATA") + File.separator + PROGRAM_NAME;
@@ -152,6 +157,10 @@ public class Configuration {
 
 	private boolean isWindows() {
 		return System.getProperty("os.name").toLowerCase().contains("win");
+	}
+
+	private String removeComment(String file) {
+		return file.replaceAll("/\\*.*\\*/", "");
 	}
 
 }

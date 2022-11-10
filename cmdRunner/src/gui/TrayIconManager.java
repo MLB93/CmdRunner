@@ -1,6 +1,7 @@
 package gui;
 
 import java.awt.AWTException;
+import java.awt.Desktop;
 import java.awt.Image;
 import java.awt.Menu;
 import java.awt.MenuItem;
@@ -11,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -19,11 +22,12 @@ import javax.swing.JOptionPane;
 
 import data.CmdProcess;
 import data.Configuration;
+import general.exception.gui.NoSystemTrayException;
 import general.exception.process.AlreadyRunningException;
 
 public class TrayIconManager implements UserCommunicator {
 
-	public static final Image IMAGE = (new ImageIcon(TrayIconManager.class.getResource("img/cmd.png"))).getImage();
+	public static final Image IMAGE = (new ImageIcon(TrayIconManager.class.getResource("img/icon.png"))).getImage();
 
 	private final TrayIcon trayIcon;
 	private SystemTray tray;
@@ -39,11 +43,10 @@ public class TrayIconManager implements UserCommunicator {
 		}
 	}
 
-	public void showGui() {
+	public void showGui() throws NoSystemTrayException {
 		// Check the SystemTray support
 		if (!SystemTray.isSupported()) {
-			System.out.println("SystemTray is not supported");
-			return;
+			throw new NoSystemTrayException();
 		}
 
 		trayIcon.setImageAutoSize(true);
@@ -53,8 +56,7 @@ public class TrayIconManager implements UserCommunicator {
 		try {
 			tray.add(trayIcon);
 		} catch (AWTException e) {
-			System.out.println("TrayIcon could not be added.");
-			return;
+			throw new NoSystemTrayException();
 		}
 
 	}
@@ -89,24 +91,30 @@ public class TrayIconManager implements UserCommunicator {
 	@Override
 	public void showErrorMessage(String title, String message) {
 		trayIcon.displayMessage(title, message, TrayIcon.MessageType.ERROR);
+		System.out.println("ERROR: " + title + ": " + message);
 	}
 
 	@Override
 	public void showWarnMessage(String title, String message) {
 		trayIcon.displayMessage(title, message, TrayIcon.MessageType.WARNING);
+		System.out.println("WARN: " + title + ": " + message);
 	}
 
 	@Override
 	public void showInfoMessage(String title, String message) {
 		trayIcon.displayMessage(title, message, TrayIcon.MessageType.INFO);
-		System.out.println(title + ": " + message);
+		System.out.println("INFO: " + title + ": " + message);
 	}
 
 	private ActionListener getAboutListener() {
 		return new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JOptionPane.showMessageDialog(null, "CmdRunner by MLB");
+				try {
+					Desktop.getDesktop().browse(URI.create("https://github.com/MLB93/CmdRunner"));
+				} catch (IOException e1) {
+					JOptionPane.showMessageDialog(null, "https://github.com/MLB93/CmdRunner", "About", JOptionPane.INFORMATION_MESSAGE);
+				}
 			}
 		};
 	}
@@ -124,8 +132,7 @@ public class TrayIconManager implements UserCommunicator {
 					try {
 						proc.start(TrayIconManager.this);
 					} catch (AlreadyRunningException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						showWarnMessage("Already running", "The process " + proc.getTitle() + " is already running.");
 					}
 				}
 			});

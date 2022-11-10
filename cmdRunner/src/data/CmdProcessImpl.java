@@ -132,7 +132,6 @@ public class CmdProcessImpl implements CmdProcess {
 					start(comm);
 				} catch (InterruptedException e) {
 				} catch (AlreadyRunningException e) {
-					System.out.println(e.getMessage());
 				}
 			}
 		});
