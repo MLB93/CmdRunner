@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import general.exception.process.AlreadyRunningException;
 import gui.UserCommunicator;
@@ -77,8 +78,13 @@ public class CmdProcessImpl implements CmdProcess {
 
 	@Override
 	public void destroy() {
-		if (process != null)
+		if (process != null) {
+			List<ProcessHandle> subProcesses = process.descendants().collect(Collectors.toList());// TODO
+			for(ProcessHandle sub:subProcesses) {
+				sub.destroy();
+			}
 			process.destroy();
+		}
 	}
 
 	@Override

@@ -40,27 +40,7 @@ public class MainController {
 		tim.showGui();
 	}
 
-	private void startProcesses() {
-		for (CmdProcess proc : config.getProcesses().collect(Collectors.toList())) {
-			try {
-				proc.autoStart(tim);
-			} catch (AlreadyRunningException e) {
-				// Nothing to do, process is may be already started manually
-			}
-		}
-	}
-
-	private void stopProcesses() {
-		for (CmdProcess proc : config.getProcesses().collect(Collectors.toList())) {
-			proc.destroy();
-			while (proc.isAlive()) {
-				try {
-					TimeUnit.SECONDS.sleep(1);
-				} catch (InterruptedException e) {
-				}
-			}
-		}
-	}
+	
 
 	private ActionListener getEditConfigListener() {
 		return new ActionListener() {
@@ -89,5 +69,27 @@ public class MainController {
 				System.exit(0);
 			}
 		};
+	}
+	
+	private void startProcesses() {
+		for (CmdProcess proc : config.getProcesses().collect(Collectors.toList())) {
+			try {
+				proc.autoStart(tim);
+			} catch (AlreadyRunningException e) {
+				// Nothing to do, process is may be already started manually
+			}
+		}
+	}
+
+	private void stopProcesses() {
+		for (CmdProcess proc : config.getProcesses().collect(Collectors.toList())) {
+			proc.destroy();
+			while (proc.isAlive()) {
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
 	}
 }
