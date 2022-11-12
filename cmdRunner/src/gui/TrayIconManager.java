@@ -27,7 +27,11 @@ import general.exception.process.AlreadyRunningException;
 
 public class TrayIconManager implements UserCommunicator {
 
-	public static final Image IMAGE = (new ImageIcon(TrayIconManager.class.getResource("img/icon.png"))).getImage();
+	private static final String GUI_IMG_ICON_PNG = "/gui/img/icon.png";
+
+	public static final Image IMAGE = (new ImageIcon(TrayIconManager.class.getResource(GUI_IMG_ICON_PNG) != null
+			? TrayIconManager.class.getResource(GUI_IMG_ICON_PNG)
+			: TrayIconManager.class.getResource("/src" + GUI_IMG_ICON_PNG))).getImage();
 
 	private final TrayIcon trayIcon;
 	private SystemTray tray;
@@ -113,7 +117,8 @@ public class TrayIconManager implements UserCommunicator {
 				try {
 					Desktop.getDesktop().browse(URI.create("https://github.com/MLB93/CmdRunner"));
 				} catch (IOException e1) {
-					JOptionPane.showMessageDialog(null, "https://github.com/MLB93/CmdRunner", "About", JOptionPane.INFORMATION_MESSAGE);
+					JOptionPane.showMessageDialog(null, "https://github.com/MLB93/CmdRunner", "About",
+							JOptionPane.INFORMATION_MESSAGE);
 				}
 			}
 		};
