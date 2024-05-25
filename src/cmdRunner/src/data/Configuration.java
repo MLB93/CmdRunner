@@ -26,10 +26,12 @@ public class Configuration {
   private static final String FILE_NAME = "cmdRunnerConf.json";
 
   private static enum ConfPara {
-    path, title, delaySecondsAutostart, notify, autostart;
+    processes, path, title, delaySecondsAutostart, notify, autostart, autostartBlockScript, autostartBlockCheckIntervalSeconds;
   }
 
   private List<CmdProcess> processes;
+  private String autostartBlockScript;
+  private long autostartBlockIntervalSeconds;
 
   public Configuration() throws ReadConfigFileException, ConfigParameterException, ShowConfigException {
     fillConfig();
@@ -44,8 +46,11 @@ public class Configuration {
     try {
       String file = readFile(configFile);
       file = removeComment(file);
-      JSONArray root = new JSONArray(file);
-      for(Object obj : root) {
+      JSONObject root = new JSONObject(file);
+      autostartBlockScript = root.optString(ConfPara.autostartBlockScript.name());
+      autostartBlockIntervalSeconds = root.optLong(ConfPara.autostartBlockCheckIntervalSeconds.name());
+      JSONArray processArray = root.getJSONArray(ConfPara.processes.name());
+      for(Object obj : processArray) {
         JSONObject jobj = (JSONObject)obj;
         String path = jobj.getString(ConfPara.path.name());
         String title = jobj.optString(ConfPara.title.name(), path);
@@ -87,6 +92,9 @@ public class Configuration {
 
   private void generateDefaultConfigFile() {
     // build default JSON
+    JSONObject root = new JSONObject();
+    root.put(ConfPara.autostartBlockScript.name(), "C:\\example.bat");
+    root.put(ConfPara.autostartBlockCheckIntervalSeconds.name(), 25l);
     JSONArray programs = new JSONArray();
     JSONObject program = new JSONObject();
     program.put(ConfPara.path.name(), "C:\\example.bat");
@@ -95,13 +103,14 @@ public class Configuration {
     program.put(ConfPara.autostart.name(), true);
     program.put(ConfPara.delaySecondsAutostart.name(), 0);
     programs.put(program);
+    root.put(ConfPara.processes.name(), programs);
 
     String ls = System.lineSeparator();
     StringBuilder bld = new StringBuilder("/*");
     bld.append(ls + "Configure your programs in a JSON array.");
     bld.append(ls + "All fields except \"path\" are optional.");
     bld.append(ls + "*/" + ls);
-    bld.append(programs.toString(2));
+    bld.append(root.toString(2));
 
     if(!new File(getProgramDir()).exists()) {
       (new File(getProgramDir())).mkdirs();
@@ -160,6 +169,14 @@ public class Configuration {
 
   private String removeComment(String file) {
     return file.replaceAll("/\\*.*\\*/", "");
+  }
+
+  public String getAutostartBlockScript() {
+    return autostartBlockScript;
+  }
+
+  public long getAutostartBlockIntervalSeconds() {
+    return autostartBlockIntervalSeconds;
   }
 
 }
