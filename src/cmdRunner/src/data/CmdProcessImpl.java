@@ -39,33 +39,8 @@ public class CmdProcessImpl implements CmdProcess {
     }
 
     @Override
-    public String getPath() {
-        return path;
-    }
-
-    @Override
     public String getTitle() {
         return title;
-    }
-
-    @Override
-    public int getDelaySeconds() {
-        return delaySeconds;
-    }
-
-    @Override
-    public boolean isNotify() {
-        return notify;
-    }
-
-    @Override
-    public boolean isAutostart() {
-        return autostart;
-    }
-
-    @Override
-    public int getRepeatIntervalMinutes() {
-        return repeatIntervalMinutes;
     }
 
     @Override

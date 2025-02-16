@@ -8,17 +8,7 @@ import java.beans.PropertyChangeListener;
 public interface CmdProcess {
     String RUNNING_PROPERTY = "RUNNING";
 
-    String getPath();
-
     String getTitle();
-
-    int getDelaySeconds();
-
-    boolean isNotify();
-
-    boolean isAutostart();
-
-    int getRepeatIntervalMinutes();
 
     boolean isRunningInRepeatMode();
 
