@@ -128,12 +128,12 @@ public class TrayIconManager implements UserCommunicator {
             menu.add(startItem);
 
             MenuItem stopItem = new MenuItem("stop");
-            stopItem.setEnabled(proc.isAlive());
+            stopItem.setEnabled(proc.isAlive() || proc.isRunningInRepeatMode());
             stopItem.addActionListener(e -> proc.destroy());
             menu.add(stopItem);
 
             MenuItem restartItem = new MenuItem("restart");
-            restartItem.setEnabled(!proc.isAlive());
+            restartItem.setEnabled(proc.isAlive() || proc.isRunningInRepeatMode());
             restartItem.addActionListener(e -> proc.restart(TrayIconManager.this));
             menu.add(restartItem);
 
@@ -143,10 +143,10 @@ public class TrayIconManager implements UserCommunicator {
 
             PropertyChangeListener runningListener = evt -> {
                 if (CmdProcess.RUNNING_PROPERTY.equals(evt.getPropertyName())) {
-                    menu.setLabel(proc.getTitle() + ((boolean) evt.getNewValue() ? " ∞" : ""));
-                    startItem.setEnabled(!(boolean) evt.getNewValue());
-                    stopItem.setEnabled((boolean) evt.getNewValue());
-                    restartItem.setEnabled((boolean) evt.getNewValue());
+                    menu.setLabel(proc.getTitle() + ((boolean) evt.getNewValue() ? " ∞" : proc.isRunningInRepeatMode() ? " ®" : ""));
+                    startItem.setEnabled(!(boolean) evt.getNewValue() && !proc.isRunningInRepeatMode());
+                    stopItem.setEnabled((boolean) evt.getNewValue() || proc.isRunningInRepeatMode());
+                    restartItem.setEnabled((boolean) evt.getNewValue() || proc.isRunningInRepeatMode());
                 }
             };
             proc.addRunningPropertyChangeListener(runningListener);

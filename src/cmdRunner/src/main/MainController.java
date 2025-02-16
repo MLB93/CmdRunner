@@ -79,12 +79,6 @@ public class MainController {
     private void stopProcesses() {
         for (CmdProcess proc : config.getProcesses().collect(Collectors.toList())) {
             proc.destroy();
-            while (proc.isAlive()) {
-                try {
-                    TimeUnit.SECONDS.sleep(1);
-                } catch (InterruptedException ignored) {
-                }
-            }
         }
     }
 

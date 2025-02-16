@@ -23,7 +23,7 @@ public class Configuration {
     private static final String FILE_NAME = "cmdRunnerConf.json";
 
     private enum ConfPara {
-        processes, path, title, delaySecondsAutostart, notify, autostart, autostartBlockScript, autostartBlockCheckIntervalSeconds
+        processes, path, title, delaySecondsAutostart, repeatIntervalMinutes, notify, autostart, autostartBlockScript, autostartBlockCheckIntervalSeconds
     }
 
     private List<CmdProcess> processes;
@@ -40,7 +40,7 @@ public class Configuration {
             createAndEditConfig();
         }
         try {
-            List<CmdProcess> readProcesses = new ArrayList<>();
+            List<CmdProcess> configuredProcesses = new ArrayList<>();
             String file = readFile(configFile);
             file = removeComment(file);
             JSONObject root = new JSONObject(file);
@@ -48,9 +48,9 @@ public class Configuration {
             autostartBlockIntervalSeconds = root.optLong(ConfPara.autostartBlockCheckIntervalSeconds.name());
             JSONArray processArray = root.getJSONArray(ConfPara.processes.name());
             for (Object obj : processArray) {
-                readProcesses.add(getCmdProcess((JSONObject) obj));
+                configuredProcesses.add(getCmdProcess((JSONObject) obj));
             }
-            processes = readProcesses;
+            processes = configuredProcesses;
         } catch (JSONException e) {
             JOptionPane.showMessageDialog(null, "Parameter missing or wrong JSON syntax.", "Reading Config",
                     JOptionPane.ERROR_MESSAGE);
@@ -65,7 +65,8 @@ public class Configuration {
         boolean notify = obj.optBoolean(ConfPara.notify.name(), true);
         boolean autostart = obj.optBoolean(ConfPara.autostart.name(), true);
         int delaySeconds = obj.optInt(ConfPara.delaySecondsAutostart.name(), 0);
-        return new CmdProcessImpl(path, title, delaySeconds, notify, autostart);
+        int repeatIntervalMinutes = obj.optInt(ConfPara.repeatIntervalMinutes.name());
+        return new CmdProcessImpl(path, title, delaySeconds, repeatIntervalMinutes, notify, autostart);
     }
 
     public void createAndEditConfig() throws ShowConfigException {
@@ -97,7 +98,7 @@ public class Configuration {
         String ls = System.lineSeparator();
         StringBuilder bld = new StringBuilder("/*");
         bld.append(ls).append("Configure your programs in a JSON array.");
-        bld.append(ls).append("All fields except \"path\" are optional.");
+        bld.append(ls).append("All fields except \"").append(ConfPara.path.name()).append("\" are optional.");
         bld.append(ls).append("*/").append(ls);
         bld.append(root.toString(2));
 
@@ -126,6 +127,7 @@ public class Configuration {
         program.put(ConfPara.notify.name(), true);
         program.put(ConfPara.autostart.name(), true);
         program.put(ConfPara.delaySecondsAutostart.name(), 0);
+        program.put(ConfPara.repeatIntervalMinutes.name(), 5);
         programs.put(program);
         root.put(ConfPara.processes.name(), programs);
         return root;

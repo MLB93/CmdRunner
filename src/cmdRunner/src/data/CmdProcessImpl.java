@@ -18,19 +18,22 @@ public class CmdProcessImpl implements CmdProcess {
     private final String path;
     private final String title;
     private final int delaySeconds;
+    private final int repeatIntervalMinutes;
     private final boolean notify;
     private final boolean autostart;
 
     private Process process = null;
+    private Thread cmdProcessMainThread = null;
     private final List<String> output = Collections.synchronizedList(new ArrayList<>());
 
     private final List<PropertyChangeListener> runningChangeListener = new ArrayList<>();
 
-    public CmdProcessImpl(String path, String title, int delaySeconds, boolean notify, boolean autostart) {
+    public CmdProcessImpl(String path, String title, int delaySeconds, int repeatIntervalMinutes, boolean notify, boolean autostart) {
         super();
         this.path = path;
         this.title = title;
         this.delaySeconds = delaySeconds;
+        this.repeatIntervalMinutes = repeatIntervalMinutes;
         this.notify = notify;
         this.autostart = autostart;
     }
@@ -61,6 +64,11 @@ public class CmdProcessImpl implements CmdProcess {
     }
 
     @Override
+    public int getRepeatIntervalMinutes() {
+        return repeatIntervalMinutes;
+    }
+
+    @Override
     public boolean isAlive() {
         return process != null && process.isAlive();
     }
@@ -78,12 +86,20 @@ public class CmdProcessImpl implements CmdProcess {
 
     @Override
     public void destroy() {
-        if (process != null) {
+        if (process != null && process.isAlive()) {
             List<ProcessHandle> subProcesses = process.descendants().collect(Collectors.toList());// TODO
             for (ProcessHandle sub : subProcesses) {
                 sub.destroy();
             }
             process.destroy();
+
+            try {
+                process.waitFor();
+            } catch (InterruptedException ignored) {
+            }
+        }
+        if (cmdProcessMainThread != null) {
+            cmdProcessMainThread.interrupt();
         }
     }
 
@@ -93,33 +109,53 @@ public class CmdProcessImpl implements CmdProcess {
             throw new AlreadyRunningException(title);
         }
 
-        Thread thread = new Thread(() -> {
+        cmdProcessMainThread = new Thread(() -> {
             synchronized (runningChangeListener) {
-                try {
-                    if (notify)
-                        comm.showInfoMessage(title + " started", "The cmd process " + title + " started");
-                    callRunningPropertyChangeListener(true);
-                    ProcessBuilder processBuilder = new ProcessBuilder();
-                    processBuilder.command(path);
-                    process = processBuilder.start();
-                    if (process.getInputStream() != null) {
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                addConsoleOutput(line);
+                do {
+                    try {
+                        if (notify)
+                            comm.showInfoMessage(title + " started", "The cmd process " + title + " started");
+                        callRunningPropertyChangeListener(true);
+                        ProcessBuilder processBuilder = new ProcessBuilder();
+                        processBuilder.command(path);
+                        process = processBuilder.start();
+                        if (process.getInputStream() != null) {
+                            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                                String line;
+                                while ((line = reader.readLine()) != null) {
+                                    addConsoleOutput(line);
+                                }
                             }
                         }
+                        process.waitFor();
+                        if (notify)
+                            comm.showInfoMessage(title + " terminated", "The cmd process " + title + " is terminated");
+                    } catch (IOException | InterruptedException e) {
+                        comm.showErrorMessage("Error: " + title, e.getClass().getSimpleName() + ": " + e.getMessage());
                     }
-                    process.waitFor();
-                    if (notify)
-                        comm.showInfoMessage(title + " terminated", "The cmd process " + title + " is terminated");
-                } catch (IOException | InterruptedException e) {
-                    comm.showErrorMessage("Error: " + title, e.getClass().getSimpleName() + ": " + e.getMessage());
-                }
-                callRunningPropertyChangeListener(false);
+                    callRunningPropertyChangeListener(false);
+                    try {
+                        TimeUnit.MINUTES.sleep(repeatIntervalMinutes);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        callRunningPropertyChangeListener(false);
+                        if (notify)
+                            comm.showInfoMessage(title + ": Repetition canceled", "Repetition of process " + title + " canceled");
+                        return;
+                    }
+                } while (isRepeatingProcess());
             }
         });
-        thread.start();
+        cmdProcessMainThread.start();
+    }
+
+    public boolean isRepeatingProcess() {
+        return repeatIntervalMinutes > 0;
+    }
+
+    @Override
+    public boolean isRunningInRepeatMode() {
+        return isRepeatingProcess() && cmdProcessMainThread != null && cmdProcessMainThread.isAlive() && !cmdProcessMainThread.isInterrupted();
     }
 
     @Override
@@ -140,12 +176,6 @@ public class CmdProcessImpl implements CmdProcess {
     public void restart(UserCommunicator comm) {
         destroy();
         try {
-            while (isAlive()) {
-                try {
-                    TimeUnit.SECONDS.sleep(1);
-                } catch (InterruptedException ignored) {
-                }
-            }
             start(comm);
         } catch (AlreadyRunningException ignored) {
         }

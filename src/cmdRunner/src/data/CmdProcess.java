@@ -18,6 +18,10 @@ public interface CmdProcess {
 
     boolean isAutostart();
 
+    int getRepeatIntervalMinutes();
+
+    boolean isRunningInRepeatMode();
+
     boolean isAlive();
 
     String getOutput();
