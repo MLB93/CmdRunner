@@ -29,6 +29,7 @@ public class CmdProcessImpl implements CmdProcess {
     private final List<String> output = Collections.synchronizedList(new ArrayList<>());
 
     private final List<PropertyChangeListener> runningChangeListener = new ArrayList<>();
+    private final List<CmdProcess.OutputListener> outputListeners = Collections.synchronizedList(new ArrayList<>());
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
@@ -165,19 +166,38 @@ public class CmdProcessImpl implements CmdProcess {
         runningChangeListener.add(listener);
     }
 
+    @Override
+    public void addOutputListener(CmdProcess.OutputListener listener) {
+        outputListeners.add(listener);
+    }
+
+    @Override
+    public void removeOutputListener(CmdProcess.OutputListener listener) {
+        outputListeners.remove(listener);
+    }
+
     private void callRunningPropertyChangeListener(boolean running) {
         for (PropertyChangeListener listener : runningChangeListener) {
             listener.propertyChange(new PropertyChangeEvent(title, RUNNING_PROPERTY, !running, running));
         }
     }
 
+    private void notifyOutputListeners() {
+        for (CmdProcess.OutputListener listener : outputListeners) {
+            listener.onOutputChanged();
+        }
+    }
+
     private void addConsoleOutput(String line) {
+        String timestampedLine;
         synchronized (output) {
             String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
-            output.add(timestamp + " " + line);
+            timestampedLine = timestamp + " " + line;
+            output.add(timestampedLine);
             if (output.size() > 1000)
                 output.remove(0);
         }
+        notifyOutputListeners();
     }
 
 }

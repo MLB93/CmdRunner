@@ -138,7 +138,7 @@ public class TrayIconManager implements UserCommunicator {
             menu.add(restartItem);
 
             MenuItem outputItem = new MenuItem("show output");
-            outputItem.addActionListener(e -> OutputFrame.show(proc.getOutput(), proc.getTitle()));
+            outputItem.addActionListener(e -> OutputFrame.show(proc.getOutput(), proc.getTitle(), proc));
             menu.add(outputItem);
 
             PropertyChangeListener runningListener = evt -> {
