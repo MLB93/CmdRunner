@@ -8,6 +8,11 @@ import java.beans.PropertyChangeListener;
 public interface CmdProcess {
     String RUNNING_PROPERTY = "RUNNING";
 
+    @FunctionalInterface
+    interface OutputListener {
+        void onOutputChanged();
+    }
+
     String getTitle();
 
     boolean isRunningInRepeatMode();
@@ -25,4 +30,8 @@ public interface CmdProcess {
     void restart(UserCommunicator comm);
 
     void addRunningPropertyChangeListener(PropertyChangeListener listener);
+
+    void addOutputListener(OutputListener listener);
+
+    void removeOutputListener(OutputListener listener);
 }
