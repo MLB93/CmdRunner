@@ -11,7 +11,7 @@ public class OutputFrame extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private final JTextArea textArea;
-    private final CmdProcess.OutputListener listener;
+    private CmdProcess.OutputListener listener;
     private volatile boolean dirty = false;
     private Timer updateTimer;
     private final JScrollBar vScrollBar;
@@ -40,40 +40,51 @@ public class OutputFrame extends JFrame {
 
         // Create and register listener for live updates if process is provided
         if (process != null) {
-            // mark dirty when backend notifies; timer will perform updates on EDT
-            this.listener = () -> dirty = true;
-            process.addOutputListener(this.listener);
-
-            // Swing timer updates the text area at a limited rate (avoids flooding the EDT)
-            updateTimer = new Timer(200, e -> {
-                if (!dirty) return;
-                if (userAdjusting) return; // don't update while user is dragging the scrollbar
-                // remember whether the view was at bottom
-                int prevValue = vScrollBar.getValue();
-                boolean wasAtBottom = prevValue + vScrollBar.getVisibleAmount() >= vScrollBar.getMaximum();
-                // update on EDT (Timer already runs on EDT)
-                textArea.setText(process.getOutput());
-                if (wasAtBottom) {
-                    textArea.setCaretPosition(textArea.getDocument().getLength());
-                } else {
-                    // try to restore previous scroll position
-                    vScrollBar.setValue(Math.min(prevValue, vScrollBar.getMaximum()));
-                }
-                dirty = false;
-            });
-            updateTimer.setRepeats(true);
-            updateTimer.start();
-
-            // Remove listener and stop timer when window is closed
-            addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowClosed(WindowEvent e) {
-                    updateTimer.stop();
-                    process.removeOutputListener(listener);
-                }
-            });
+            registerListener(process);
         } else {
             this.listener = null;
+        }
+    }
+
+    private void registerListener(CmdProcess process) {
+        this.listener = () -> dirty = true;
+        process.addOutputListener(this.listener);
+        startUpdateTimer(process);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                stopUpdateTimer();
+                process.removeOutputListener(listener);
+            }
+        });
+    }
+
+    private void startUpdateTimer(CmdProcess process) {
+        updateTimer = new Timer(200, e -> {
+            if (!dirty) return;
+            if (userAdjusting) return; // don't update while user is dragging the scrollbar
+            updateTextFromProcess(process);
+            dirty = false;
+        });
+        updateTimer.setRepeats(true);
+        updateTimer.start();
+    }
+
+    private void stopUpdateTimer() {
+        if (updateTimer != null) {
+            updateTimer.stop();
+            updateTimer = null;
+        }
+    }
+
+    private void updateTextFromProcess(CmdProcess process) {
+        int prevValue = vScrollBar.getValue();
+        boolean wasAtBottom = prevValue + vScrollBar.getVisibleAmount() >= vScrollBar.getMaximum();
+        textArea.setText(process.getOutput());
+        if (wasAtBottom) {
+            textArea.setCaretPosition(textArea.getDocument().getLength());
+        } else {
+            vScrollBar.setValue(Math.min(prevValue, vScrollBar.getMaximum()));
         }
     }
 
