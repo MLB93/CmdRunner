@@ -52,7 +52,7 @@ public class OutputFrame extends JFrame {
         startUpdateTimer(process);
         addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosed(WindowEvent e) {
+            public void windowClosing(WindowEvent e) {
                 stopUpdateTimer();
                 process.removeOutputListener(listener);
             }
