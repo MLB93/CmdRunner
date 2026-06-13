@@ -13,6 +13,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class CmdProcessImpl implements CmdProcess {
     private final String path;
@@ -27,6 +29,8 @@ public class CmdProcessImpl implements CmdProcess {
     private final List<String> output = Collections.synchronizedList(new ArrayList<>());
 
     private final List<PropertyChangeListener> runningChangeListener = new ArrayList<>();
+
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     public CmdProcessImpl(String path, String title, int delaySeconds, int repeatIntervalMinutes, boolean notify, boolean autostart) {
         super();
@@ -169,7 +173,8 @@ public class CmdProcessImpl implements CmdProcess {
 
     private void addConsoleOutput(String line) {
         synchronized (output) {
-            output.add(line);
+            String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
+            output.add(timestamp + " " + line);
             if (output.size() > 1000)
                 output.remove(0);
         }
