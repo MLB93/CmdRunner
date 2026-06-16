@@ -15,8 +15,17 @@ import java.util.stream.Collectors;
 
 public class MainController {
     public static void main(String[] args) {
+        ParseResult parseResult = parseArguments(args);
+
+        if (parseResult.helpRequested) {
+            showHelp();
+            System.exit(0);
+        }
+
+        String programDir = parseResult.programDir;
+
         try {
-            Configuration config = new Configuration();
+            Configuration config = programDir != null ? new Configuration(programDir) : new Configuration();
             TrayIconManager tim = new TrayIconManager(config);
 
             MainController controller = new MainController(config, tim);
@@ -28,6 +37,55 @@ public class MainController {
         } catch (ConfigException | NoSystemTrayException e) {
             JOptionPane.showMessageDialog(null, e.getMessage(), e.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    /**
+     * Structured result of argument parsing. Easy to extend with more fields later.
+     */
+    private static class ParseResult {
+        final String programDir;
+        final boolean helpRequested;
+
+        ParseResult(String programDir, boolean helpRequested) {
+            this.programDir = programDir;
+            this.helpRequested = helpRequested;
+        }
+    }
+
+    private static ParseResult parseArguments(String[] args) {
+        String programDir = null;
+        boolean helpRequested = false;
+
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (arg.equals("--help") || arg.equals("-h")) {
+                helpRequested = true;
+            } else if (arg.equals("--dir") || arg.equals("-d")) {
+                if (i + 1 < args.length) {
+                    programDir = args[++i];
+                }
+            }
+        }
+
+        return new ParseResult(programDir, helpRequested);
+    }
+
+    private static void showHelp() {
+        String help = "CmdRunner - Command Runner and Process Management Tool\n\n" +
+                "Usage: java -jar cmdRunner.jar [OPTIONS]\n\n" +
+                "Options:\n" +
+                "  -d, --dir <PATH>        Specify the program directory for configuration files\n" +
+                "                          If not specified, the default directory will be used:\n" +
+                "                          - Windows: %APPDATA%\\cmdRunner\n" +
+                "                          - Linux/Mac: ~/.cmdRunner\n" +
+                "  -h, --help              Show this help message\n\n" +
+                "Examples:\n" +
+                "  java -jar cmdRunner.jar\n" +
+                "  java -jar cmdRunner.jar --dir C:\\MyConfig\n" +
+                "  java -jar cmdRunner.jar -d /home/user/config\n" +
+                "  java -jar cmdRunner.jar --help";
+
+        System.out.println(help);
     }
 
     private final Configuration config;
