@@ -26,9 +26,16 @@ public class Configuration {
         processes, path, title, delaySecondsAutostart, repeatIntervalMinutes, notify, autostart, autostartBlockScript, autostartBlockCheckIntervalSeconds
     }
 
+    private String programDir;
+
     private List<CmdProcess> processes;
     private String autostartBlockScript;
     private long autostartBlockIntervalSeconds;
+
+    public Configuration(String programDir) throws ReadConfigFileException, ConfigParameterException, ShowConfigException {
+        this.programDir = programDir;
+        fillConfig();
+    }
 
     public Configuration() throws ReadConfigFileException, ConfigParameterException, ShowConfigException {
         fillConfig();
@@ -154,10 +161,13 @@ public class Configuration {
     }
 
     public String getProgramDir() {
-        if (isWindows())
-            return System.getenv("APPDATA") + File.separator + PROGRAM_NAME;
-        else
-            return System.getProperty("user.home") + File.separator + PROGRAM_NAME;
+        if (programDir == null) {
+            if (isWindows())
+                programDir = System.getenv("APPDATA") + File.separator + PROGRAM_NAME;
+            else
+                programDir = System.getProperty("user.home") + File.separator + PROGRAM_NAME;
+        }
+        return programDir;
     }
 
     public Stream<CmdProcess> getProcesses() {
