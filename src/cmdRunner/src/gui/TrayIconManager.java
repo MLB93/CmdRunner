@@ -63,6 +63,11 @@ public class TrayIconManager implements UserCommunicator {
         }
 
         popup.addSeparator();
+
+        MenuItem clearAllLogsItem = new MenuItem("Clear All Logs");
+        clearAllLogsItem.addActionListener(e -> config.getProcesses().forEach(CmdProcess::clearOutput));
+        popup.add(clearAllLogsItem);
+
         MenuItem editConfigItem = new MenuItem("Edit Config");
         for (ActionListener listener : editConfigListeners) {
             editConfigItem.addActionListener(listener);

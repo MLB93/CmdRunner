@@ -176,6 +176,13 @@ public class CmdProcessImpl implements CmdProcess {
         outputListeners.remove(listener);
     }
 
+    public void clearOutput() {
+        synchronized (output) {
+            output.clear();
+        }
+        notifyOutputListeners();
+    }
+
     private void callRunningPropertyChangeListener(boolean running) {
         for (PropertyChangeListener listener : runningChangeListener) {
             listener.propertyChange(new PropertyChangeEvent(title, RUNNING_PROPERTY, !running, running));
