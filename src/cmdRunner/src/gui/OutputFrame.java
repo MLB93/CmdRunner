@@ -30,9 +30,14 @@ public class OutputFrame extends JFrame {
 
         JScrollPane scrollPane = new JScrollPane(textArea, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        add(scrollPane);
         this.vScrollBar = scrollPane.getVerticalScrollBar();
         this.vScrollBar.addAdjustmentListener(e -> userAdjusting = e.getValueIsAdjusting());
+
+        // Set layout and add components
+        setLayout(new BorderLayout());
+        setJMenuBar(createMenuBar(process));
+        add(scrollPane, BorderLayout.CENTER);
+
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(750, 450);
         setTitle(title);
@@ -44,6 +49,22 @@ public class OutputFrame extends JFrame {
         } else {
             this.listener = null;
         }
+    }
+
+    private JMenuBar createMenuBar(CmdProcess process) {
+        JMenuBar menuBar = new JMenuBar();
+
+        JMenu editMenu = new JMenu("Edit");
+        JMenuItem clearItem = new JMenuItem("Clear Log");
+        clearItem.addActionListener(e -> {
+            if (process != null) {
+                process.clearOutput();
+            }
+        });
+        editMenu.add(clearItem);
+        menuBar.add(editMenu);
+
+        return menuBar;
     }
 
     private void registerListener(CmdProcess process) {

@@ -34,4 +34,6 @@ public interface CmdProcess {
     void addOutputListener(OutputListener listener);
 
     void removeOutputListener(OutputListener listener);
+
+    void clearOutput();
 }
